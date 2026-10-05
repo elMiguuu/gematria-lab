@@ -36,6 +36,9 @@ for(let f=2;f<=40;f++){
   cipherDefs['sumerian'+f]={name:`Sumerian ${f}`,group:'Sumerian',vals:ordinal.map(n=>n*f)};
 }
 
+const palette=['#ffbb38','#4edc89','#59b8ff','#ee79df','#ff8b56','#b397ff','#5ce4d6','#ff6386'];
+Object.values(cipherDefs).forEach((d,i)=>d.color=palette[i%palette.length]);
+
 const defaultActive=['ordinal','reduction','reverse','reverseReduction','standard','latin','sumerian','reverseSumerian','satanic','reverseSatanic','primes','trigonal','squares','fibonacci','reversePrimes','reverseTrigonal','reverseSquares'];
 let active=new Set(defaultActive);
 let db=[
@@ -58,18 +61,18 @@ function renderCipherGroups(){
   for(const [g,items] of Object.entries(groups)){
     const div=document.createElement('div');div.className='group';
     div.innerHTML=`<h3>${g}</h3><div class="chips"></div>`; const chips=div.querySelector('.chips');
-    for(const [k,d] of items){const lab=document.createElement('label');lab.className='chip';lab.innerHTML=`<input type="checkbox" data-key="${k}" ${active.has(k)?'checked':''}> ${d.name}`;chips.appendChild(lab)}
+    for(const [k,d] of items){const lab=document.createElement('label');lab.className='chip';lab.style.setProperty('--cipher',d.color);lab.innerHTML=`<input type="checkbox" data-key="${k}" ${active.has(k)?'checked':''}> ${d.name}`;chips.appendChild(lab)}
     root.appendChild(div);
   }
   root.querySelectorAll('input').forEach(i=>i.addEventListener('change',e=>{const k=e.target.dataset.key;e.target.checked?active.add(k):active.delete(k);renderAll()}));
 }
 function renderResults(){
   const text=$('#phrase').value; const root=$('#results');root.innerHTML='';
-  [...active].forEach(k=>{const d=cipherDefs[k],v=calc(text,k);const el=document.createElement('div');el.className='result';el.innerHTML=`<div class="name">${d.name}</div><div class="value">${v.toLocaleString('de-CH')}</div>`;el.onclick=()=>renderBreakdown(k);root.appendChild(el)});
+  [...active].forEach(k=>{const d=cipherDefs[k],v=calc(text,k);const el=document.createElement('div');el.className='result';el.style.setProperty('--cipher',d.color);el.innerHTML=`<div class="name">${d.name}</div><div class="value">${v.toLocaleString('de-CH')}</div>`;el.onclick=()=>renderBreakdown(k);root.appendChild(el)});
   const count=[...normalize(text)].filter(c=>/[A-Z]/.test(c)).length;$('#summary').textContent=`${count} Buchstaben · ${active.size} aktive Ciphers`;
 }
 function renderBreakdown(k){
-  const text=$('#phrase').value,d=cipherDefs[k],arr=letters(text,k),b=$('#breakdown');b.classList.remove('hidden');
+  const text=$('#phrase').value,d=cipherDefs[k],arr=letters(text,k),b=$('#breakdown');b.classList.remove('hidden');b.style.setProperty('--cipher',d.color);
   b.innerHTML=`<strong>${d.name}</strong> · Total ${calc(text,k).toLocaleString('de-CH')}<div class="letters">${arr.map(x=>`<div class="letterBox"><b>${x.ch}</b><span>${x.v}</span></div>`).join('')}</div>`;
 }
 function categories(){return [...new Set(db.map(x=>x.category||'General'))].sort()}
@@ -78,13 +81,13 @@ function updateMinMatches(){const s=$('#minMatches'),n=Math.max(active.size,1),o
 function renderMatches(){
   updateMinMatches(); const phrase=$('#phrase').value.trim(),keys=[...active]; const cat=$('#categoryFilter').value; const min=+$('#minMatches').value||keys.length; const exact=$('#exactOnly').checked;
   const head=$('#matchHead'),body=$('#matchBody');
-  head.innerHTML=`<tr><th>Phrase</th><th>Kategorie</th><th>Match</th>${keys.map(k=>`<th>${cipherDefs[k].name}</th>`).join('')}</tr>`;body.innerHTML='';
+  head.innerHTML=`<tr><th>Phrase</th><th>Kategorie</th><th>Match</th>${keys.map(k=>`<th style="color:${cipherDefs[k].color}">${cipherDefs[k].name}</th>`).join('')}</tr>`;body.innerHTML='';
   if(!phrase||!keys.length){$('#dbStatus').textContent='Phrase eingeben und mindestens einen Cipher aktivieren.';return}
   const target=Object.fromEntries(keys.map(k=>[k,calc(phrase,k)]));
   const rows=[];
   for(const item of db){if(cat!=='all'&&item.category!==cat)continue;const vals={},hits=[];for(const k of keys){vals[k]=calc(item.phrase,k);if(vals[k]===target[k])hits.push(k)}if(hits.length>=min && (!exact || hits.length===keys.length))rows.push({item,vals,hits})}
   rows.sort((a,b)=>b.hits.length-a.hits.length||a.item.phrase.localeCompare(b.item.phrase));
-  rows.slice(0,500).forEach(r=>{body.insertAdjacentHTML('beforeend',`<tr><td>${escapeHtml(r.item.phrase)}</td><td>${escapeHtml(r.item.category||'General')}</td><td class="matchBadge">${r.hits.length}/${keys.length}</td>${keys.map(k=>`<td>${r.vals[k].toLocaleString('de-CH')}${r.hits.includes(k)?' ✓':''}</td>`).join('')}</tr>`)})
+  rows.slice(0,500).forEach(r=>{body.insertAdjacentHTML('beforeend',`<tr><td>${escapeHtml(r.item.phrase)}</td><td>${escapeHtml(r.item.category||'General')}</td><td class="matchBadge">${r.hits.length}/${keys.length}</td>${keys.map(k=>`<td style="color:${cipherDefs[k].color}">${r.vals[k].toLocaleString('de-CH')}${r.hits.includes(k)?' ✓':''}</td>`).join('')}</tr>`)})
   $('#dbStatus').textContent=`${rows.length} Treffer in ${db.length.toLocaleString('de-CH')} Datenbank-Einträgen${rows.length>500?' · erste 500 angezeigt':''}.`;
 }
 function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
@@ -95,7 +98,7 @@ $('#selectCore').onclick=()=>{active=new Set(['ordinal','reduction','reverse','r
 $('#selectAll').onclick=()=>{active=new Set(Object.keys(cipherDefs));renderCipherGroups();renderAll()};
 $('#clearAll').onclick=()=>{active.clear();renderCipherGroups();renderAll()};
 $('#minMatches').addEventListener('change',renderMatches);$('#categoryFilter').addEventListener('change',renderMatches);$('#exactOnly').addEventListener('change',renderMatches);
-$('#themeBtn').onclick=()=>document.body.classList.toggle('dark');
+$('#themeBtn').onclick=()=>document.body.classList.toggle('light');
 $('#fileInput').addEventListener('change',async e=>{
   const f=e.target.files[0]; if(!f)return; const text=await f.text(); let added=0;
   for(const raw of text.split(/\r?\n/)){const line=raw.trim();if(!line)continue;let phrase=line,category='Imported';if(line.includes(',')){const p=line.split(',');phrase=p.shift().trim();category=p.join(',').trim()||'Imported'}if(phrase){db.push({phrase,category});added++}}
