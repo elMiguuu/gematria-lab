@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gematria Lab</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Gematria Lab</h1>
+      <p>Calculator + Database Match</p>
+    </div>
+    <button id="themeBtn" class="ghost">Dark / Light</button>
+  </header>
+
+  <main class="wrap">
+    <section class="card hero">
+      <label for="phrase">Phrase</label>
+      <div class="inputRow">
+        <input id="phrase" autocomplete="off" placeholder="z. B. Golden Gate Bridge" />
+        <button id="clearBtn">Clear</button>
+      </div>
+      <div id="summary" class="summary"></div>
+    </section>
+
+    <section class="card">
+      <div class="sectionHead">
+        <div>
+          <h2>Ciphers</h2>
+          <p>Aktiviere nur die Systeme, die du vergleichen möchtest.</p>
+        </div>
+        <div class="actions">
+          <button id="selectCore" class="ghost">Core</button>
+          <button id="selectAll" class="ghost">Alle</button>
+          <button id="clearAll" class="ghost">Keine</button>
+        </div>
+      </div>
+      <div id="cipherGroups"></div>
+    </section>
+
+    <section class="card">
+      <div class="sectionHead">
+        <div>
+          <h2>Werte</h2>
+          <p>Klick auf einen Cipher für die Buchstabenaufschlüsselung.</p>
+        </div>
+      </div>
+      <div id="results" class="results"></div>
+      <div id="breakdown" class="breakdown hidden"></div>
+    </section>
+
+    <section class="card">
+      <div class="sectionHead">
+        <div>
+          <h2>Database Match</h2>
+          <p>Suche Begriffe, die in mehreren aktivierten Ciphers gleichzeitig denselben Wert besitzen.</p>
+        </div>
+      </div>
+
+      <div class="matchControls">
+        <label>
+          Mindest-Matches
+          <select id="minMatches"></select>
+        </label>
+        <label>
+          Kategorie
+          <select id="categoryFilter"><option value="all">Everything</option></select>
+        </label>
+        <label class="checkline"><input type="checkbox" id="exactOnly" checked /> nur identische Werte der gewählten Ciphers</label>
+      </div>
+
+      <div class="dbtools">
+        <div>
+          <strong>Eigene Datenbank laden</strong>
+          <p>TXT/CSV: ein Begriff pro Zeile oder <code>phrase,category</code>. Die Berechnung geschieht lokal im Browser.</p>
+        </div>
+        <input id="fileInput" type="file" accept=".txt,.csv" />
+      </div>
+
+      <div id="dbStatus" class="status"></div>
+      <div class="tableWrap">
+        <table>
+          <thead id="matchHead"></thead>
+          <tbody id="matchBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>Local prototype · keine Daten werden hochgeladen</footer>
+  <script src="app.js"></script>
+</body>
+</html>
