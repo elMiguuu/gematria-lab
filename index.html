@@ -20,7 +20,7 @@
       <label for="phrase">Phrase</label>
       <div class="inputRow">
         <input id="phrase" autocomplete="off" placeholder="z. B. Golden Gate Bridge" />
-        <button id="clearBtn">Clear</button>
+        <button id="addPhrase">Hinzufügen ↵</button><button id="clearBtn" class="ghost">Leeren</button>
       </div>
       <div id="summary" class="summary"></div>
     </section>
@@ -43,11 +43,11 @@
     <section class="card">
       <div class="sectionHead">
         <div>
-          <h2>Werte</h2>
-          <p>Klick auf einen Cipher für die Buchstabenaufschlüsselung.</p>
+          <h2>Begriffe vergleichen</h2>
+          <p>Ein Begriff pro Zeile. Klicke auf eine Zahl für die Buchstabenaufschlüsselung.</p>
         </div>
       </div>
-      <div id="results" class="results"></div>
+      <button id="clearHistory" class="ghost">Liste leeren</button><div id="results" class="phraseRows"></div>
       <div id="breakdown" class="breakdown hidden"></div>
     </section>
 

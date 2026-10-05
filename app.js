@@ -66,20 +66,38 @@ function renderCipherGroups(){
   }
   root.querySelectorAll('input').forEach(i=>i.addEventListener('change',e=>{const k=e.target.dataset.key;e.target.checked?active.add(k):active.delete(k);renderAll()}));
 }
-function renderResults(){
-  const text=$('#phrase').value; const root=$('#results');root.innerHTML='';
-  [...active].forEach(k=>{const d=cipherDefs[k],v=calc(text,k);const el=document.createElement('div');el.className='result';el.style.setProperty('--cipher',d.color);el.innerHTML=`<div class="name">${d.name}</div><div class="value">${v.toLocaleString('de-CH')}</div>`;el.onclick=()=>renderBreakdown(k);root.appendChild(el)});
-  const count=[...normalize(text)].filter(c=>/[A-Z]/.test(c)).length;$('#summary').textContent=`${count} Buchstaben · ${active.size} aktive Ciphers`;
+let phraseHistory=[];
+let selectedPhrase='';
+function submitPhrase(){
+  const phrase=$('#phrase').value.trim();if(!phrase)return;
+  if(!phraseHistory.includes(phrase))phraseHistory.unshift(phrase);
+  selectedPhrase=phrase;renderAll();$('#phrase').select();
 }
-function renderBreakdown(k){
-  const text=$('#phrase').value,d=cipherDefs[k],arr=letters(text,k),b=$('#breakdown');b.classList.remove('hidden');b.style.setProperty('--cipher',d.color);
+function renderResults(){
+  const keys=[...active],root=$('#results');root.innerHTML='';
+  const table=document.createElement('table');table.className='phraseTable';
+  const head=document.createElement('thead');
+  head.innerHTML='<tr><th class="phraseColumn">Begriff</th>'+keys.map(k=>`<th style="color:${cipherDefs[k].color}">${cipherDefs[k].name}</th>`).join('')+'<th></th></tr>';
+  table.appendChild(head);const body=document.createElement('tbody');
+  phraseHistory.forEach(phrase=>{
+    const row=document.createElement('tr');if(phrase===selectedPhrase)row.className='selectedPhrase';
+    const title=document.createElement('td');title.className='phraseColumn';const select=document.createElement('button');select.className='phraseSelect';select.textContent=phrase;
+    select.onclick=()=>{selectedPhrase=phrase;$('#phrase').value=phrase;renderAll()};title.appendChild(select);row.appendChild(title);
+    keys.forEach(k=>{const td=document.createElement('td'),button=document.createElement('button');button.className='cipherNumber';button.style.color=cipherDefs[k].color;button.textContent=calc(phrase,k).toLocaleString('de-CH');button.title=`${cipherDefs[k].name}: Buchstaben anzeigen`;button.onclick=()=>renderBreakdown(k,phrase);td.appendChild(button);row.appendChild(td)});
+    const end=document.createElement('td'),remove=document.createElement('button');remove.className='removePhrase';remove.textContent='×';remove.setAttribute('aria-label',`Begriff ${phrase} entfernen`);remove.onclick=()=>{phraseHistory=phraseHistory.filter(x=>x!==phrase);if(selectedPhrase===phrase)selectedPhrase=phraseHistory[0]||'';renderAll()};end.appendChild(remove);row.appendChild(end);body.appendChild(row);
+  });table.appendChild(body);root.appendChild(table);
+  if(!phraseHistory.length){const empty=document.createElement('p');empty.className='emptyPhrases';empty.textContent='Begriff eingeben und Enter drücken. Jeder Begriff erscheint hier in einer eigenen Zeile.';root.appendChild(empty)}
+  $('#summary').textContent=`Enter fügt einen Begriff hinzu · ${phraseHistory.length} Begriffe · ${active.size} aktive Ciphers`;
+}
+function renderBreakdown(k,text=selectedPhrase){
+  const ignored=$('#phrase').value,d=cipherDefs[k],arr=letters(text,k),b=$('#breakdown');b.classList.remove('hidden');b.style.setProperty('--cipher',d.color);
   b.innerHTML=`<strong>${d.name}</strong> · Total ${calc(text,k).toLocaleString('de-CH')}<div class="letters">${arr.map(x=>`<div class="letterBox"><b>${x.ch}</b><span>${x.v}</span></div>`).join('')}</div>`;
 }
 function categories(){return [...new Set(db.map(x=>x.category||'General'))].sort()}
 function updateCategorySelect(){const s=$('#categoryFilter'),old=s.value;s.innerHTML='<option value="all">Everything</option>'+categories().map(c=>`<option>${c}</option>`).join('');if([...s.options].some(o=>o.value===old))s.value=old}
 function updateMinMatches(){const s=$('#minMatches'),n=Math.max(active.size,1),old=+s.value||n;s.innerHTML='';for(let i=n;i>=1;i--){s.insertAdjacentHTML('beforeend',`<option value="${i}">${i} / ${n}</option>`)}s.value=Math.min(old,n)}
 function renderMatches(){
-  updateMinMatches(); const phrase=$('#phrase').value.trim(),keys=[...active]; const cat=$('#categoryFilter').value; const min=+$('#minMatches').value||keys.length; const exact=$('#exactOnly').checked;
+  updateMinMatches(); const phrase=selectedPhrase,keys=[...active]; const cat=$('#categoryFilter').value; const min=+$('#minMatches').value||keys.length; const exact=$('#exactOnly').checked;
   const head=$('#matchHead'),body=$('#matchBody');
   head.innerHTML=`<tr><th>Phrase</th><th>Kategorie</th><th>Match</th>${keys.map(k=>`<th style="color:${cipherDefs[k].color}">${cipherDefs[k].name}</th>`).join('')}</tr>`;body.innerHTML='';
   if(!phrase||!keys.length){$('#dbStatus').textContent='Phrase eingeben und mindestens einen Cipher aktivieren.';return}
@@ -93,7 +111,7 @@ function renderMatches(){
 function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function renderAll(){renderResults();updateCategorySelect();renderMatches()}
 
-$('#phrase').addEventListener('input',renderAll);$('#clearBtn').onclick=()=>{$('#phrase').value='';renderAll();$('#phrase').focus()};
+$('#phrase').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();submitPhrase()}});$('#addPhrase').onclick=submitPhrase;$('#clearHistory').onclick=()=>{phraseHistory=[];selectedPhrase='';$('#breakdown').classList.add('hidden');renderAll()};$('#clearBtn').onclick=()=>{$('#phrase').value='';renderAll();$('#phrase').focus()};
 $('#selectCore').onclick=()=>{active=new Set(['ordinal','reduction','reverse','reverseReduction']);renderCipherGroups();renderAll()};
 $('#selectAll').onclick=()=>{active=new Set(Object.keys(cipherDefs));renderCipherGroups();renderAll()};
 $('#clearAll').onclick=()=>{active.clear();renderCipherGroups();renderAll()};
@@ -105,4 +123,4 @@ $('#fileInput').addEventListener('change',async e=>{
   updateCategorySelect();renderMatches();$('#dbStatus').textContent=`${added.toLocaleString('de-CH')} Einträge importiert · Datenbank jetzt ${db.length.toLocaleString('de-CH')} Einträge.`;
 });
 
-renderCipherGroups();updateCategorySelect();$('#phrase').value='Golden Gate Bridge';renderAll();
+renderCipherGroups();updateCategorySelect();$('#phrase').value='';renderAll();
